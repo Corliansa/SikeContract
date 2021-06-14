@@ -693,8 +693,9 @@ contract SikeCoin is Context, IERC20, Ownable {
     //will be set after presale
     bool public swapAndLiquifyEnabled = false;
     
-    uint256 public _maxTxAmount = 1000000 * 10**9;
-    uint256 private constant numTokensSellToAddToLiquidity = 80000 * 10**9;
+    //will be set after presale
+    uint256 public _maxTxAmount = 100000000 * 10**9;
+    uint256 private constant numTokensSellToAddToLiquidity = 100000 * 10**9;
     
     event MinTokensBeforeSwapUpdated(uint256 minTokensBeforeSwap);
     event SwapAndLiquifyEnabledUpdated(bool enabled);
@@ -855,11 +856,10 @@ contract SikeCoin is Context, IERC20, Ownable {
     }
    
     function setMaxTxPercent(uint256 maxTxPercent) external onlyOwner() {
-        //maxTxPercent can only be between 0.1 and 1% of Total Supply
-        require(maxTxPercent*10 >1, "Invalid Max Tx Percentage!");
-        require(maxTxPercent*10 <=10, "Invalid Max Tx Percentage!");
+        //maxTxPercent can only be between 0.1 and 5% of Total Supply
+        require(maxTxPercent >=10 && maxTxPercent <=500, "Invalid Max Tx Percentage!");
         _maxTxAmount = _tTotal.mul(maxTxPercent).div(
-            10**2
+            10**4
         );
     }
 
@@ -969,7 +969,7 @@ contract SikeCoin is Context, IERC20, Ownable {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
         require(amount > 0, "Transfer amount must be greater than zero");
-        if(from != owner() && to != owner())
+        if(!_isExcludedFromFee[from] && !_isExcludedFromFee[to])
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
 
         // is the token balance of this contract address over the min number of
@@ -990,7 +990,6 @@ contract SikeCoin is Context, IERC20, Ownable {
             from != uniswapV2Pair &&
             swapAndLiquifyEnabled
         ) {
-            contractTokenBalance = numTokensSellToAddToLiquidity;
             //add liquidity
             swapAndLiquify(contractTokenBalance);
         }
